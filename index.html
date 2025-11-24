@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>แนะนำอาหารตามโรค</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- ฟอนต์สวย ๆ จาก Google (ไม่บังคับ) -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Kanit", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f3f5fb;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #233876;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      position: relative;
+    }
+
+    /* ซ่อนปุ่ม radio แต่ยังใช้งานได้ */
+    .disease-radio {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ส่วนเลือกโรค */
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #1f2933;
+    }
+
+    .section-title span.icon {
+      font-size: 1.1rem;
+    }
+
+    .disease-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .disease-chip label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #ffffff;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      user-select: none;
+      white-space: nowrap;
+      color: #1f2933;
+    }
+
+    .disease-chip label .emoji {
+      font-size: 1rem;
+    }
+
+    .helper-text {
+      font-size: 0.82rem;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    /* ไฮไลต์โรคที่ถูกเลือก (เชื่อมกับ radio โดยใช้ id/for) */
+    #all:checked     ~ .disease-selector label[for="all"],
+    #dm:checked      ~ .disease-selector label[for="dm"],
+    #obese:checked   ~ .disease-selector label[for="obese"],
+    #bp:checked      ~ .disease-selector label[for="bp"],
+    #reflux:checked  ~ .disease-selector label[for="reflux"],
+    #ulcer:checked   ~ .disease-selector label[for="ulcer"],
+    #thyroid:checked ~ .disease-selector label[for="thyroid"],
+    #kidney:checked  ~ .disease-selector label[for="kidney"],
+    #gout:checked    ~ .disease-selector label[for="gout"],
+    #constip:checked ~ .disease-selector label[for="constip"] {
+      background: #233876;
+      color: #ffffff;
+      border-color: #233876;
+      box-shadow: 0 6px 15px rgba(15, 23, 42, 0.25);
+    }
+
+    /* ส่วนผลลัพธ์เมนูอาหาร */
+    .results-wrapper {
+      margin-top: 4px;
+      min-height: 250px;
+    }
+
+    .disease-panel {
+      display: none;
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    .panel-header {
+      margin-bottom: 10px;
+    }
+
+    .panel-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .panel-header p {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .menu-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .menu-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .menu-card {
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 12px 12px 14px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .menu-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .menu-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.72rem;
+    }
+
+    .tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e5f3ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .tag-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .menu-nutrition {
+      font-size: 0.76rem;
+      color: #4b5563;
+    }
+
+    .menu-note {
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+
+    .menu-note strong {
+      color: #374151;
+    }
+
+    /* เพิ่มสไตล์สำหรับ วิธีทำ / สัดส่วน / สรรพคุณ */
+    .menu-method,
+    .menu-portion,
+    .menu-benefit {
+      font-size: 0.76rem;
+      color: #4b5563;
+    }
+
+    .menu-method strong,
+    .menu-portion strong,
+    .menu-benefit strong {
+      color: #374151;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      border-top: 1px dashed #e5e7eb;
+      padding-top: 8px;
+    }
+
+    /* แสดง panel พร้อมอนิเมชันเมื่อ radio แต่ละตัวถูกเลือก */
+    #all:checked ~ .results-wrapper .panel-all {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #dm:checked ~ .results-wrapper .disease-panel { display: none; }
+    #dm:checked ~ .results-wrapper .panel-dm {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #obese:checked ~ .results-wrapper .disease-panel { display: none; }
+    #obese:checked ~ .results-wrapper .panel-obese {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #bp:checked ~ .results-wrapper .disease-panel { display: none; }
+    #bp:checked ~ .results-wrapper .panel-bp {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #reflux:checked ~ .results-wrapper .disease-panel { display: none; }
+    #reflux:checked ~ .results-wrapper .panel-reflux {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #ulcer:checked ~ .results-wrapper .disease-panel { display: none; }
+    #ulcer:checked ~ .results-wrapper .panel-ulcer {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #thyroid:checked ~ .results-wrapper .disease-panel { display: none; }
+    #thyroid:checked ~ .results-wrapper .panel-thyroid {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #kidney:checked ~ .results-wrapper .disease-panel { display: none; }
+    #kidney:checked ~ .results-wrapper .panel-kidney {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #gout:checked ~ .results-wrapper .disease-panel { display: none; }
+    #gout:checked ~ .results-wrapper .panel-gout {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #constip:checked ~ .results-wrapper .disease-panel { display: none; }
+    #constip:checked ~ .results-wrapper .panel-constip {
+      display: block;
+      animation: fadeIn 0.28s ease-out;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>เว็บไซต์แนะนำอาหารตามโรค</h1>
+      <p>เลือกโรคของคุณ แล้วดูเมนูอาหารที่เหมาะสม พร้อมคำแนะนำโภชนาการเบื้องต้น</p>
+    </header>
+
+    <main class="card">
+
+      <!-- ปุ่ม radio (ตัวควบคุม) ต้องอยู่ก่อน .disease-selector และ .results-wrapper -->
+      <input type="radio" name="disease" id="all"     class="disease-radio" checked>
+      <input type="radio" name="disease" id="dm"      class="disease-radio">
+      <input type="radio" name="disease" id="obese"   class="disease-radio">
+      <input type="radio" name="disease" id="bp"      class="disease-radio">
+      <input type="radio" name="disease" id="reflux"  class="disease-radio">
+      <input type="radio" name="disease" id="ulcer"   class="disease-radio">
+      <input type="radio" name="disease" id="thyroid" class="disease-radio">
+      <input type="radio" name="disease" id="kidney"  class="disease-radio">
+      <input type="radio" name="disease" id="gout"    class="disease-radio">
+      <input type="radio" name="disease" id="constip" class="disease-radio">
+
+      <div class="section-title">
+        <span class="icon"></span>
+        <span>เลือกโรค</span>
+      </div>
+      <p class="helper-text">
+        *เมนูอาหารเป็นเพียงเบื้องต้น ไม่ใช่คำแนะนำทางการแพทย์ ควรปรึกษาแพทย์/นักกำหนดอาหารก่อนนำไปใช้จริง
+      </p>
+
+      <!-- ปุ่มให้ผู้ใช้กด (label ผูกกับ radio ด้วย for="id") -->
+      <div class="disease-selector">
+        <div class="disease-chip">
+          <label for="all">
+            <span class="emoji"></span> ทั้งหมด
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="dm">
+            <span class="emoji"></span> โรคเบาหวาน
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="obese">
+            <span class="emoji"></span> โรคอ้วน
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="bp">
+            <span class="emoji"></span> โรคความดันโลหิต
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="reflux">
+            <span class="emoji"></span> โรคกรดไหลย้อน
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="ulcer">
+            <span class="emoji"></span> โรคกระเพาะอาหาร
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="thyroid">
+            <span class="emoji"></span> โรคไทรอยด์
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="kidney">
+            <span class="emoji"></span> โรคไต
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="gout">
+            <span class="emoji"></span> โรคเกาต์
+          </label>
+        </div>
+
+        <div class="disease-chip">
+          <label for="constip">
+            <span class="emoji"></span> โรคท้องผูก
+          </label>
+        </div>
+      </div>
+
+      <!-- ผลลัพธ์ -->
+      <section class="results-wrapper">
+
+        <!-- โรคเบาหวาน -->
+        <section class="disease-panel panel-all panel-dm">
+          <div class="panel-header">
+            <h2>เมนูสำหรับผู้ป่วยโรคเบาหวาน </h2>
+            <p>เน้นคาร์โบไฮเดรตเชิงซ้อน น้ำตาลไม่สูง กินเป็นเวลา และควบคุมปริมาณ</p>
+          </div>
+
+          <div class="menu-grid">
+            <!-- เมนู 1 -->
+            <article class="menu-card">
+              <h3 class="menu-title">สลัดผักรวมอกไก่ต้ม</h3>
+              <div class="menu-tags">
+                <span class="tag">อิ่มนาน</span>
+                <span class="tag">น้ำตาลตํ่า</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> อกไก่ต้มฉีก 100 กรัม ผักกาดหอม/ผักสลัดรวม 1 ถ้วย มะเขือเทศเชอร์รี 4 ผล แตงกวาหั่น ½ ลูก โยเกิร์ตรสธรรมชาติไขมันต่ำ 2 ช้อนโต๊ะ น้ำมะนาว 1 ช้อนชา พริกไทยดำเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> จัดผักลงจาน วางอกไก่ต้มฉีกด้านบน ผสมนํ้าสลัด:โยเกิร์ต + นํ้ามะนาว + พริกไทยดำเล็กน้อย ราดนํ้าสลัดลงบนผักเป็นอันเสร็จ 
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ผักใบเขียวและผักหลากสีให้ไฟเบอร์สูง ช่วยควบคุมน้ำตาลในเลือดอกไก่มีโปรตีนสูง ไขมันต่ำ ช่วยให้อิ่มนาน น้ำสลัดแบบโยเกิร์ตช่วยลดแคลอรีและน้ำตาล
+              </p>
+            </article>
+              <!-- เมนู 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้อง + แกงเลียงผักรวม</h3>
+              <div class="menu-tags">
+                <span class="tag">ไม่ใส่กะทิ</span>
+                <span class="tag">ผักหลากหลาย</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้องสุก ½ ถ้วย ฟักทอง/บวบ/เห็ด/ใบแมงลักรวม 1 ถ้วย กุ้งสด 5 ตัว (หรือเต้าหู้แทนได้) เครื่องแกงเลียง 1 ช้อนโต๊ะ น้ำปลาแบบโซเดียมต่ำเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำให้เดือด ใส่เครื่องแกง ใส่ผักและกุ้งลงไป ปรุงรสด้วยน้ำปลาเล็กน้อย เสิร์ฟคู่ข้าวกล้อง
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวกล้องมีไฟเบอร์สูงกว่าข้าวขาว ควบคุมระดับน้ำตาลได้ดี แกงเลียงให้ใยอาหาร วิตามิน และช่วยลดอาการบวมน้ำ ใช้วัตถุดิบธรรมชาติ ไม่มีน้ำตาล หรือกะทิ
+            </article>
+               <!-- เมนู 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">โจ๊กข้าวกล้องหมูสับไข่ลวก</h3>
+              <div class="menu-tags">
+                <span class="tag">อิ่มนาน</span>
+                <span class="tag">น้ำตาลไม่พุ่งเร็ว</span>
+              </div>
+              <p class="menu-nutrition">≈ 320 kcal • โปรตีนปานกลาง • คาร์บเชิงซ้อนจากข้าวกล้อง</p>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ชาม:</strong> ข้าวกล้องหุงสุก ½ ถ้วย, น้ำซุป 1½ ถ้วย, หมูสับไม่มัน 40 กรัม, ไข่ไก่ 1 ฟอง, ต้นหอมซอย 1 ชต., ซีอิ๊วขาวโซเดียมต่ำเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มข้าวกล้องกับน้ำซุปให้เละเป็นโจ๊ก ใส่หมูสับลงลวกให้สุก ปรุงรสด้วยซีอิ๊วขาวเล็กน้อย ตอกไข่ลวกลงบนหน้า โรยต้นหอมก่อนเสิร์ฟ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวกล้องช่วยให้น้ำตาลในเลือดขึ้นช้า หมูสับและไข่ให้โปรตีน ช่วยซ่อมแซมร่างกาย เหมาะเป็นมื้อเช้าสำหรับผู้ป่วยเบาหวาน
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคอ้วน -->
+        <section class="disease-panel panel-all panel-obese">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคอ้วน </h2>
+            <p>เน้นอาหารพลังงานไม่สูง ผักเยอะ โปรตีนพอเหมาะ ลดของทอด น้ำหวาน และขนมหวาน</p>
+          </div>
+
+          <div class="menu-grid">
+
+            <!-- เมนู 1: ยำวุ้นเส้นอกไก่ต้ม -->
+            <article class="menu-card">
+              <h3 class="menu-title">ยำวุ้นเส้นอกไก่ต้ม</h3>
+              <div class="menu-tags">
+                <span class="tag">แคลอรีปานกลาง</span>
+                <span class="tag">ผักหลากสี</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> วุ้นเส้นแช่น้ำสุก 40 กรัม, อกไก่ต้มฉีก 50 กรัม, แครอทซอย 2 ช้อนโต๊ะ, หอมหัวใหญ่ซอย 1 ช้อนโต๊ะ, มะเขือเทศหั่น 3–4 ชิ้น, น้ำมะนาว 1 ช้อนโต๊ะ, น้ำปลาโซเดียมต่ำ ½ ช้อนโต๊ะ, พริกขี้หนูซอยตามชอบ
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ลวกวุ้นเส้นให้สุกพักให้สะเด็ดน้ำ ผสมอกไก่ต้มฉีกกับผักทั้งหมด ปรุงรสด้วยน้ำมะนาว น้ำปลาโซเดียมต่ำ และพริก คลุกให้เข้ากัน ชิมรสเปรี้ยวนำ เค็มน้อย
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> โปรตีนจากอกไก่ช่วยให้อิ่มนาน วุ้นเส้นและผักเพิ่มกากใย ช่วยคุมพลังงาน เหมาะกับผู้ที่ต้องการลดน้ำหนัก
+              </p>
+            </article>
+            <!--เมนู 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ปลาอบสมุนไพร + ผักลวก</h3>
+              <div class="menu-tags">
+                <span class="tag">ไข่มันตํ่า</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ปลา (ทับทิม แซลมอน หรือดอลลี่) 120 กรัม  กระเทียม มะนาว ผักลวก 1 ถ้วย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> หมักปลาด้วยสมุนไพรและมะนาว อบ 180°C ประมาณ 12–15 นาที เสิร์ฟพร้อมผักลวก
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ปลามีโปรตีนย่อยง่าย ไขมันต่ำ สมุนไพรช่วยเผาผลาญไขมัน ผักลวกช่วยเพิ่มไฟเบอร์ ลดความหิว
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้อง + ไข่ต้ม + น้ำพริกปลาทู</h3>
+              <div class="menu-tags">
+                <span class="tag">ไฟเบอร์สูง</span>
+                <span class="tag">อิ่มนาน</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้อง ½ ถ้วย ไข่ต้ม 1 ฟอง เนื้อปลาทูนึ่ง 50 กรัม ผักสดและลวก
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ตำพริก กระเทียม และมะนาวเล็กน้อย ใส่ปลาทูนึ่ง เสิร์ฟพร้อมข้าวและผักลวก/สด
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวกล้องมีไฟเบอร์สูง ช่วยให้อิ่มนาน ไข่ต้มให้โปรตีนและไขมันดี น้ำพริกปลาทูควรลดเค็มและเผ็ดเพื่อช่วยเร่งเผาผลาญอย่างปลอดภัย
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคความดันโลหิต -->
+        <section class="disease-panel panel-all panel-bp">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคความดันโลหิต </h2>
+            <p>ลดอาหารเค็มจัด หมักดอง แปรรูป เน้นผัก ผลไม้ และโปรตีนไขมันต่ำ</p>
+          </div>
+
+          <div class="menu-grid">
+            
+
+            <!-- เมนู 1: ข้าวกล้องปลานึ่งสมุนไพร -->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้องปลานึ่งสมุนไพร</h3>
+              <div class="menu-tags">
+                <span class="tag">โซเดียมต่ำ</span>
+                <span class="tag">ไขมันดี</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้องหุงสุก ½ ถ้วย, ปลาเนื้อขาว 80 กรัม, ขิงซอย 1 ช้อนโต๊ะ, ตะไคร้ซอย 1 ช้อนโต๊ะ, ใบมะกรูดฉีก 2–3 ใบ, น้ำมะนาวเล็กน้อย, ซีอิ๊วขาวโซเดียมต่ำ 1 ชช.
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> วางปลาเนื้อขาวบนจาน ท็อปด้วยสมุนไพรทั้งหมด ราดซีอิ๊วขาวโซเดียมต่ำ นึ่งประมาณ 10–12 นาทีจนสุก เสิร์ฟคู่ข้าวกล้อง
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ปลาให้โปรตีนและไขมันดี สมุนไพรช่วยลดกลิ่นคาวและเพิ่มสารต้านอนุมูลอิสระ เหมาะสำหรับผู้ที่ต้องควบคุมความดันและลดเกลือ
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้อง + ต้มจืดเต้าหู้ผักกาดขาว</h3>
+              <div class="menu-tags">
+                <span class="tag">ไข่มันตํ่า</span>
+                <span class="tag">โซเดียมน้อย</span>
+              </div>
+              
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้อง ½ ถ้วย เต้าหู้ขาว 100 กรัม ผักกาดขาว 1 ถ้วย กระเทียมตำ ½ ช้อนชา น้ำซุปผัก 1–1½ ถ้วย พริกไทยเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำซุปให้เดือด ใส่กระเทียมและผัก ใส่เต้าหู้ลงไป ต้มให้เดือดอีกครั้ง โรยพริกไทยเล็กน้อย เสิร์ฟพร้อมข้าวกล้อง
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> เต้าหู้เป็นโปรตีนจากพืช ไขมันต่ำ ผักกาดขาวและสาหร่ายให้โพแทสเซียมช่วยขับโซเดียมออกจากร่างกาย ไม่มีการใช้ซีอิ๊วหรือผงชูรส ลดความเสี่ยงความดันพุ่ง
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">สลัดอะโวคาโด + ไข่ต้ม</h3>
+              <div class="menu-tags">
+                <span class="tag">ไข่มันมี</span>
+                <span class="tag">อิ่มนาน</span>
+              </div>
+              
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> อะโวคาโด ½ ลูก ผักสลัด 1 ถ้วย ไข่ต้ม 1 ฟอง มะนาว 1 ช้อนชา
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> จัดผักและอะโวคาโดใส่จาน ผ่าครึ่งไข่ต้มวางด้านบน ราดมะนาวแทนน้ำสลัด
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ไขมันดีจากอะโวคาโด ช่วยลดไขมันเลว (LDL) ไฟเบอร์สูงช่วยลดความดัน โปรตีนจากไข่ช่วยให้อิ่มนาน
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคกรดไหลย้อน -->
+        <section class="disease-panel panel-all panel-reflux">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคกรดไหลย้อน </h2>
+            <p>หลีกเลี่ยงเผ็ดจัด เปรี้ยวจัด มันจัด กินมื้อไม่หนักเกิน และไม่กินก่อนนอนอย่างน้อย 3 ชม.</p>
+          </div>
+
+          <div class="menu-grid">
+            
+            <!-- เมนู 1: ซุปมันฝรั่งบดไก่ฉีก -->
+            <article class="menu-card">
+              <h3 class="menu-title">ซุปมันฝรั่งบดไก่ฉีก</h3>
+              <div class="menu-tags">
+                <span class="tag">เนื้อนุ่ม</span>
+                <span class="tag">อ่อนโยนต่อกระเพาะ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ถ้วย:</strong> มันฝรั่งหั่นชิ้น 80 กรัม, น้ำซุปไก่ 1 ถ้วย, อกไก่ต้มฉีก 40 กรัม, แครอทหั่นเต๋า 2 ช้อนโต๊ะ, เกลือเล็กน้อย (หรือไม่ใส่), พริกไทยขาวโรยบาง ๆ
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มมันฝรั่งและแครอทในน้ำซุปจนสุกนิ่ม ปั่นหรือบดให้เนียน ใส่อกไก่ฉีกลงไป คนให้เข้ากัน ปรุงรสอ่อน ๆ เสิร์ฟอุ่น ๆ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> เนื้อซุปเนียน ช่วยลดการระคายเคืองหลอดอาหาร มันฝรั่งให้พลังงานพอเหมาะ อกไก่ให้โปรตีน เหมาะกับผู้มีอาการกรดไหลย้อนกำเริบ
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">โจ๊กข้าวโอ๊ตใส่ไก่สับ</h3>
+              <div class="menu-tags">
+                <span class="tag">ย่อยง่าย</span>
+                <span class="tag">อ่อนโยนต่อกระเพาะ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ถ้วย:</strong> ข้าวโอ๊ต ½ ถ้วย ไก่สับ 50–70 กรัม น้ำ 1–1½ ถ้วย ต้นหอมซอยเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มข้าวโอ๊ตกับน้ำจนข้น ใส่ไก่สับลง คนจนสุก โรยต้นหอมเล็กน้อย (หลีกเลี่ยงของเผ็ดจัดหรือกระเทียมมากเกินไป)
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวโอ๊ตช่วยเคลือบกระเพาะ ลดการระคายเคือง ไก่สับย่อยง่าย ไม่กระตุ้นกรดเหมือนเนื้อแดง เหมาะรับประทานตอนท้องว่างหรือมื้อเช้า
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">มันหวานนึ่ง + ไข่ตุ๋น</h3>
+              <div class="menu-tags">
+                <span class="tag">อิ่มนาาน</span>
+                <span class="tag">ไม่มีนํ้ามัน</span>
+              </div>
+              <p class="menu-portion">มันหวานนึ่ง ½–1 หัว ไข่ 1 ฟอง น้ำอุ่น ½ ถ้วยข้าวโอ๊ต ½ ถ้วย ไก่สับ 50–70 กรัม น้ำ 1–1½ ถ้วย ต้นหอมซอยเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> นึ่งมันหวานจนสุก ตีไข่ผสมน้ำและกรองให้เนียน นึ่ง 10 นาที หรือจนเซ็ตตัว
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> มันหวานช่วยให้รู้สึกอิ่มโดยไม่เพิ่มกรด ไข่ตุ๋นย่อยง่าย เหมาะกับผู้ที่มีอาการแสบร้อนกลางอก ไม่มีการผัดหรือใช้น้ำมัน
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคกระเพาะอาหาร -->
+        <section class="disease-panel panel-all panel-ulcer">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคกระเพาะอาหาร </h2>
+            <p>เน้นอาหารอ่อน ย่อยง่าย ไม่เผ็ด ไม่เปรี้ยวจัด กินเป็นเวลา ไม่ปล่อยให้หิวจัด</p>
+          </div>
+
+          <div class="menu-grid">
+            
+            <!-- เมนู 1: ข้าวกล้องต้มไก่ฉีก -->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้องต้มไก่ฉีก</h3>
+              <div class="menu-tags">
+                <span class="tag">อาหารอ่อน</span>
+                <span class="tag">ไม่เผ็ด ไม่เปรี้ยว</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ชาม:</strong> ข้าวกล้องหุงสุก ½ ถ้วย, น้ำซุปไก่ 1½ ถ้วย, อกไก่ฉีก 40 กรัม, แครอทหั่นเต๋า 1 ช้อนโต๊ะ, ฟักเขียวหั่นชิ้นเล็ก 2 ช้อนโต๊ะ, ซีอิ๊วขาวเล็กน้อย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มข้าวกล้องกับน้ำซุปให้เมล็ดนิ่ม ใส่ฟักและแครอท เคี่ยวต่อจนผักนิ่ม เติมไก่ฉีกและปรุงรสจาง ๆ เสิร์ฟอุ่น ๆ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> เหมาะกับผู้ที่ปวดแสบท้องง่าย อาหารอ่อนช่วยลดแรงกดกับกระเพาะ ข้าวกล้องเพิ่มใยอาหารในระดับพอเหมาะ
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+             <article class="menu-card">
+              <h3 class="menu-title">ต้มจืดฟักเขียวเต้าหู้</h3>
+              <div class="menu-tags">
+                <span class="tag">อาหารอ่อน</span>
+                <span class="tag">ย่อยง่าย</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ชาม:</strong> ฟักเขียวหั่น ½ ถ้วย เต้าหู้ 80–100 กรัม น้ำซุปผัก 1 ถ้วย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำซุป ใส่ฟักจนเริ่มนิ่ม ใส่เต้าหู้ลงไป เคี่ยวต่อ 2–3 นาที
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ฟักเขียวช่วยลดความร้อนในกระเพาะ เต้าหู้เป็นโปรตีนย่อยง่าย น้ำซุปอุ่นช่วยลดการระคายเคือง
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวสวย + ปลานึ่งซีอิ๊ว</h3>
+              <div class="menu-tags">
+                <span class="tag">รับประทานง่าย</span>
+                <span class="tag">ย่อยง่าย</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ชาม:</strong> ปลาเนื้อขาว 120 กรัม ซีอิ๊วโลว์โซเดียมปลายช้อน ขิงซอยเล็กน้อย (หากไม่ระคายท้อง) ข้าวสวย ½ ถ้วย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> นึ่งปลากับน้ำสะอาด เติมซีอิ๊วเล็กน้อย โรยขิงซอย
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ปลาเนื้อขาวย่อยง่ายกว่าหมู/เนื้อ วิธีนึ่งลดไขมัน ไม่กระตุ้นกรดในกระเพาะ รสอ่อนเหมาะกับระบบย่อยอาหาร
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคไทรอยด์ -->
+        <section class="disease-panel panel-all panel-thyroid">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคไทรอยด์ </h2>
+            <p>ควบคุมพลังงานตามแพทย์แนะนำ เลี่ยงไอโอดีนสูงเกิน (บางกรณี) และระวังอาหารเสริมเอง</p>
+          </div>
+          <div class="menu-grid">
+            
+            <!-- เมนู1: เต้าหู้ผัดเห็ดน้ำมันน้อย -->
+            <article class="menu-card">
+              <h3 class="menu-title">เต้าหู้ผัดเห็ดน้ำมันน้อย</h3>
+              <div class="menu-tags">
+                <span class="tag">โปรตีนจากพืช</span>
+                <span class="tag">ไขมันต่ำ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> เต้าหู้ขาวแข็งหั่นชิ้น 80 กรัม, เห็ดหอม/เห็ดฟางรวม 50 กรัม, แครอทซอย 1 ช้อนโต๊ะ, ต้นหอมซอย 1 ช้อนโต๊ะ, น้ำมันรำข้าว 1 ช้อนชา, ซีอิ๊วขาว 1 ช้อนชา
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ผัดเต้าหู้กับน้ำมันรำข้าวเล็กน้อย ใส่เห็ดและแครอท เติมน้ำเล็กน้อย ปรุงรสด้วยซีอิ๊วขาว ผัดจนทุกอย่างสุกดี โรยต้นหอม
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> เต้าหู้และเห็ดให้โปรตีนจากพืชและใยอาหาร เหมาะกับผู้ป่วยไทรอยด์ที่ต้องควบคุมไขมัน และพลังงานรวมของมื้อ
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้องผัดไข่ใส่ผักรวม</h3>
+              <div class="menu-tags">
+                <span class="tag">มื้อหลักสมดุล</span>
+                <span class="tag">ไฟเบอร์พอเหมาะ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้องหุงสุก ½–¾ ถ้วย (ตามพลังงานที่แพทย์แนะนำ), ไข่ไก่ 1 ฟอง, แครอทหั่นเต๋า 1 ช้อนโต๊ะ, ถั่วฝักยาวหั่นท่อน 1 ช้อนโต๊ะ, หอมใหญ่ซอย 1 ช้อนโต๊ะ, น้ำมันรำข้าว 1 ช้อนชา, ซีอิ๊วขาว 1 ช้อนชา
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ตั้งกระทะใส่น้ำมันเล็กน้อย ผัดหอมใหญ่ แครอท และถั่วฝักยาวให้สุก ตอกไข่ลงไปคนให้แตก จากนั้นใส่ข้าวกล้องลงผัดให้เข้ากัน ปรุงรสด้วยซีอิ๊วขาวเล็กน้อย ชิมรสอ่อน ๆ แล้วตักเสิร์ฟ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวกล้องให้คาร์โบไฮเดรตเชิงซ้อนช่วยให้อิ่มนาน ไข่ให้โปรตีนคุณภาพดี ผักช่วยเพิ่มใยอาหาร เหมาะสำหรับผู้ป่วยไทรอยด์ที่ต้องการควบคุมน้ำหนักและพลังงานในแต่ละมื้อ
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ซุปฟักเขียวน้ำใสหมูสันใน</h3>
+              <div class="menu-tags">
+                <span class="tag">ย่อยง่าย</span>
+                <span class="tag">ไขมันต่ำ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ถ้วย:</strong> ฟักเขียวหั่นชิ้น 80 กรัม, หมูสันในหั่นชิ้นบาง 40 กรัม, น้ำซุป 1–1½ ถ้วย, แครอทหั่นแว่น 1 ช้อนโต๊ะ, ต้นหอมผักชีซอยเล็กน้อย, ซีอิ๊วขาว 1 ช้อนชา
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำซุปให้เดือด ใส่หมูสันในลงลวกให้สุก ใส่ฟักและแครอท เคี่ยวต่อจนฟักนิ่ม ปรุงรสอ่อน ๆ ด้วยซีอิ๊วขาว ตักใส่ถ้วย โรยต้นหอมผักชีก่อนเสิร์ฟ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ฟักเขียวให้พลังงานต่ำและมีน้ำสูง ช่วยให้รู้สึกสบายท้อง หมูสันในเป็นโปรตีนไขมันต่ำ เหมาะสำหรับผู้ป่วยไทรอยด์ที่ต้องการควบคุมไขมันและพลังงานในมื้ออาหาร
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคไต -->
+        <section class="disease-panel panel-all panel-kidney">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคไต </h2>
+            <p>ต้องควบคุมโปรตีน โซเดียม โพแทสเซียม และฟอสฟอรัส ตามระยะโรคที่แพทย์กำหนด</p>
+          </div>
+
+          <div class="menu-grid">
+
+
+            <!-- เมนู 1: ข้าวขาว + ไข่ขาวตุ๋น -->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวขาว + ไข่ขาวตุ๋น</h3>
+              <div class="menu-tags">
+                <span class="tag">โปรตีนคุณภาพดี</span>
+                <span class="tag">โซเดียมต่ำ</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวสวย ½ ถ้วย (ตามคำแนะนำแพทย์), ไข่ขาว 3 ฟอง, น้ำ ¼ ถ้วย, ต้นหอมซอยเล็กน้อย, ซีอิ๊วขาวโซเดียมต่ำเพียงหยดเดียวหรือไม่ใส่
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ตีไข่ขาวกับน้ำให้เข้ากัน กรองผ่านกระชอน เทใส่ถ้วย โรยต้นหอมเล็กน้อย นึ่งไฟอ่อน 8–10 นาทีจนเซ็ตตัว เสิร์ฟคู่ข้าวสวย
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ไข่ขาวมีโปรตีนสูงแต่ฟอสฟอรัสและไขมันต่ำ เหมาะกับผู้ป่วยโรคไตที่ต้องจำกัดโปรตีนและเกลือ (ต้องทำตามคำแนะนำแพทย์เสมอ)
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวสวย + ต้มจืดฟักเขียวหมูสันใน (ไม่เค็ม)</h3>
+              <div class="menu-tags">
+                <span class="tag">โซเดียมต่ำ</span>
+                <span class="tag">โปรตีนควบคุม</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวสวย ½ ถ้วย, ฟักเขียวหั่นชิ้น 80 กรัม, หมูสันในหั่นชิ้น 40 กรัม, น้ำซุป 1–1½ ถ้วย, ต้นหอมผักชีเล็กน้อย, ซีอิ๊วขาวโซเดียมต่ำไม่เกิน ½ ช้อนชา
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำซุปให้เดือด ใส่หมูสันในลงลวกให้สุก ใส่ฟักเขียว เคี่ยวต่อจนฟักนิ่ม ปรุงรสอ่อน ๆ ด้วยซีอิ๊วขาว ตักใส่ถ้วย โรยต้นหอมผักชี เสิร์ฟคู่ข้าวสวย
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ฟักเขียวให้พลังงานต่ำและมีน้ำสูง ช่วยให้รู้สึกสดชื่น หมูสันในเป็นโปรตีนไขมันต่ำ เหมาะสำหรับผู้ป่วยโรคไตที่ต้องควบคุมโปรตีนและโซเดียม
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวต้มปลาเนื้อขาว</h3>
+              <div class="menu-tags">
+                <span class="tag">ย่อยง่าย</span>
+                <span class="tag">โปรตีนควบคุม</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวสวย ½ ถ้วย (หรือข้าวต้ม 1 ถ้วย), ปลานิลหรือปลากะพงเนื้อขาว 40–60 กรัม, น้ำซุป 1–1½ ถ้วย, ขิงซอยเล็กน้อย (ถ้าทานได้), ต้นหอมโรยเล็กน้อย, ซีอิ๊วขาวลดโซเดียมไม่เกิน ⅓ ช้อนชา หรือไม่ใส่
+              </p>
+
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> 
+                ลวกปลาด้วยน้ำเดือดให้สุกและตักพักไว้ จากนั้นต้มข้าวกับน้ำซุปให้เดือด ใส่เนื้อปลาที่ลวกแล้วลงไป ปรุงรสอ่อนมากหรือไม่ปรุงเพิ่ม โรยต้นหอมและขิงเล็กน้อย (หากแพทย์ไม่ห้าม) แล้วเสิร์ฟ
+              </p>
+
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ปลาเนื้อขาวมีไขมันต่ำ โปรตีนย่อยง่าย และฟอสฟอรัสต่ำกว่าปลาทะเลบางชนิด เหมาะกับผู้ป่วยโรคไตที่ต้องควบคุมโปรตีนโดยยังได้รับจากแหล่งคุณภาพ และเป็นอาหารที่ย่อยง่าย เหมาะช่วงอ่อนเพลียหรือเบื่ออาหาร
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคเกาต์ -->
+        <section class="disease-panel panel-all panel-gout">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคเกาต์ </h2>
+            <p>ลดอาหารพิวรีนสูง เช่น เครื่องในสัตว์ เนื้อแดงบางชนิด ปลาซาร์ดีน น้ำซุปข้น และดื่มน้ำให้เพียงพอ</p>
+          </div>
+          <div class="menu-grid">
+            <!--เมนูที่ 1-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้อง + ต้มจืดสาหร่ายเต้าหู้</h3>
+              <div class="menu-tags">
+                <span class="tag">ลดการสะสมกรดยูริค</span>
+                <span class="tag">พิวรีนตํ่า</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> เต้าหู้ขาว 100 กรัม สาหร่ายแห้ง 1 ช้อนโต๊ะ ผักกาดขาว ½ ถ้วย น้ำซุปผัก 1–1½ ถ้วย
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มน้ำซุปให้เดือด ใส่ผักและเต้าหู้ โรยสาหร่ายปรุงรสอ่อน ๆ
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> เต้าหู้ให้โปรตีนจากพืชพิวรีนต่ำ สาหร่ายช่วยขับน้ำและลดการอักเสบ น้ำซุปอุ่นช่วยลดการสะสมกรดยูริค
+              </p>
+            </article>
+
+             <!-- เมนูใหม่ 2:  -->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวกล้อง + ผัดคะน้าน้ำมันน้อย</h3>
+              <div class="menu-tags">
+                <span class="tag">พิวรีนต่ำ</span>
+                <span class="tag">ไฟเบอร์สูง</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ข้าวกล้อง ½ ทัพพี, คะน้าหั่น 70–100 กรัม, น้ำมันรำข้าว 1 ช้อนชา, กระเทียมกลีบเล็ก ½ กลีบ (ไม่ใส่ก็ได้), ซีอิ๊วโซเดียมต่ำ ½ ช้อนชา
+              </p>
+
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ผัดกระเทียมในน้ำมันเล็กน้อย ใส่คะน้าผัดจนสุก เติมน้ำเล็กน้อย ปรุงรสอ่อนที่สุด เสิร์ฟคู่ข้าวกล้อง
+              </p>
+
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong>
+                คะน้าเป็นผักพิวรีนต่ำ ไฟเบอร์สูง ช่วยควบคุมระดับน้ำตาลและไขมันในเลือดเหมาะกับผู้ป่วยเกาต์และช่วยระบบขับถ่าย
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ปลาย่างเสิร์ฟคู่สลัดผัก</h3>
+              <div class="menu-tags">
+                <span class="tag">โปรตีนไขมันต่ำ</span>
+                <span class="tag">ลดการอักเสบ</span>
+              </div>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> ปลาเนื้อขาว เช่น ปลาทับทิม/ปลากะพง 60–80 กรัม ย่างไม่ติดหนัง, ผักสลัด (ผักกาดหอม แตงกวา มะเขือเทศ) 1 ถ้วย, น้ำสลัดโยเกิร์ต 1–2 ช้อนโต๊ะ
+              </p>
+
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ย่างปลาด้วยไฟกลางจนสุกนุ่ม ไม่ใส่น้ำมัน เสิร์ฟคู่สลัดและน้ำสลัดโยเกิร์ตแบบไขมันต่ำ
+              </p>
+
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong>
+                ปลาเนื้อขาวเป็นโปรตีนที่ย่อยง่ายและมีพิวรีนน้อยเมื่อเทียบกับเนื้อสัตว์บางชนิด ผักสดช่วยลดการอักเสบและควบคุมระดับกรดยูริค
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- โรคท้องผูก -->
+        <section class="disease-panel panel-all panel-constip">
+          <div class="panel-header">
+            <h2>เมนูสำหรับโรคท้องผูก </h2>
+            <p>เน้นอาหารกากใยสูง ดื่มน้ำมากพอ และขยับร่างกายสม่ำเสมอ (เว้นแต่มีกำจัดพิเศษจากแพทย์)</p>
+          </div>
+          <div class="menu-grid">
+            <!-- เมนู 1: โยเกิร์ตรสธรรมชาติผสมผลไม้และเมล็ดเจีย -->
+            <article class="menu-card">
+              <h3 class="menu-title">โยเกิร์ตรสธรรมชาติ + ผลไม้ + เมล็ดเจีย</h3>
+              <div class="menu-tags">
+                <span class="tag">โปรไบโอติก</span>
+                <span class="tag">ไฟเบอร์สูง</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ถ้วย:</strong> โยเกิร์ตรสธรรมชาติไขมันต่ำ ½ ถ้วย, กล้วยน้ำว้าหั่นชิ้น ½ ผล, แอปเปิลหั่นเต๋า ¼ ผล, เมล็ดเจีย 1 ช้อนชา, น้ำเปล่า 2 ช้อนโต๊ะ (แช่เมล็ดเจียให้พองก่อน)
+              </p>
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> แช่เมล็ดเจียในน้ำให้พอง เทลงบนโยเกิร์ต ใส่กล้วยและแอปเปิล คลุกเบา ๆ ให้เข้ากัน แช่เย็นเล็กน้อยก่อนทานได้
+              </p>
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> โยเกิร์ตมีจุลินทรีย์ดีช่วยสมดุลลำไส้ ผลไม้และเมล็ดเจียมีใยอาหารสูง ช่วยให้ขับถ่ายดีขึ้น ลดอาการท้องผูก
+              </p>
+            </article>
+            <!--เมนูที่ 2-->
+            <article class="menu-card">
+              <h3 class="menu-title">ข้าวโอ๊ตต้มใส่ผลไม้</h3>
+              <div class="menu-tags">
+                <span class="tag">ไฟเบอร์สูง</span>
+                <span class="tag">ช่วยขับถ่าย</span>
+              </div>
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 ถ้วย:</strong> ข้าวโอ๊ต 3 ช้อนโต๊ะ, น้ำ 1 ถ้วย (หรือนมไขมันต่ำ), กล้วยสุกครึ่งผล (หรือเบอร์รี่สด ¼ ถ้วย), น้ำผึ้งไม่เกิน ½ ช้อนชา (ถ้าต้องการ)
+              </p>
+
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ต้มข้าวโอ๊ตกับน้ำหรือนมไฟอ่อนจนข้น ใส่ผลไม้และคลุกให้เข้ากัน ราดน้ำผึ้งเล็กน้อยก่อนเสิร์ฟ
+              </p>
+
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ข้าวโอ๊ตมีใยอาหารชนิดละลายน้ำ (soluble fiber) ช่วยให้อุจจาระนิ่ม ผลไม้ช่วยเพิ่มกากใย ทำให้ลำไส้ทำงานเป็นจังหวะ
+              </p>
+            </article>
+            <!--เมนูที่ 3-->
+            <article class="menu-card">
+              <h3 class="menu-title">ผัดผักรวมไฟอ่อน</h3>
+              <div class="menu-tags">
+                <span class="tag">กากใยสูง</span>
+                <span class="tag">ย่อยง่าย</span>
+              </div>
+
+              <p class="menu-nutrition">≈ 120–180 kcal • ผักหลากหลายช่วยระบบขับถ่าย</p>
+
+              <p class="menu-portion">
+                <strong>สัดส่วนต่อ 1 จาน:</strong> แครอท 20 กรัม, บรอกโคลี 30 กรัม, ผักกาดขาว 40 กรัม, ข้าวโพดเม็ด 1 ช้อนโต๊ะ, น้ำมันรำข้าว 1 ช้อนชา, น้ำสะอาด 2–3 ช้อนโต๊ะ, ซีอิ๊วโซเดียมต่ำเพียงเล็กน้อย
+              </p>
+
+              <p class="menu-method">
+                <strong>วิธีทำ:</strong> ผัดผักด้วยน้ำมันเล็กน้อย เติมน้ำเพื่อให้ผักนิ่มไม่ไหม้ ปรุงรสอ่อน ๆ ไม่ใส่ซอสหรือผงปรุงรสมากเกินไป
+              </p>
+
+              <p class="menu-benefit">
+                <strong>สรรพคุณ:</strong> ผักมีเส้นใยมากช่วยเพิ่มมวลอุจจาระ และช่วยให้ระบบลำไส้บีบตัวสม่ำเสมอ ทำให้ถ่ายง่ายขึ้น
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <p class="footer-note">
+          *ข้อมูลทั้งหมดเป็นเพียงตัวอย่างเพื่อการศึกษา ไม่ใช่คำวินิจฉัยหรือคำสั่งการรักษา
+          หากมีโรคประจำตัวหรือรับประทานยาประจำ ควรปรึกษาแพทย์/นักกำหนดอาหารก่อนปรับเปลี่ยนอาหารทุกครั้ง
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
